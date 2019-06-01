@@ -1,0 +1,17 @@
+{
+  "name": "now-screenshot-diff",
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/*.js",
+      "use": "@now/node",
+      "config": { "maxLambdaSize": "40mb" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/src/index.js"
+    }
+  ]
+}
