@@ -7,10 +7,7 @@
   "author": "Thobi Sinaga <s.thobi.sinaga@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@zeit/integration-utils": "^0.6.1",
-    "chrome-aws-lambda": "^1.17.1",
-    "puppeteer": "^1.17.0",
-    "puppeteer-core": "^1.17.0"
+    "@zeit/integration-utils": "^0.6.1"
   },
   "devDependencies": {
     "husky": "^2.3.0",

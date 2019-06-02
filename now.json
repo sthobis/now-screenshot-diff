@@ -1,9 +1,10 @@
 {
   "name": "now-screenshot-diff",
   "version": 2,
+  "alias": "now-screenshot-diff",
   "builds": [
     {
-      "src": "src/*.js",
+      "src": "src/index.js",
       "use": "@now/node",
       "config": { "maxLambdaSize": "40mb" }
     }

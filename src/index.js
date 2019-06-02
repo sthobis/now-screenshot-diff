@@ -1,57 +1,146 @@
 const { withUiHook, htm } = require("@zeit/integration-utils");
 
-module.exports = withUiHook(async ({ payload, zeitClient }) => {
-  const { projectId } = payload;
-  let apiUrl = `/v4/now/deployments?limit=3`;
-  if (projectId) {
-    apiUrl += `&projectId=${projectId}`;
-  }
+const compareImages = deployments => {
+  const diffUrl = `https://screenshot-diff.now.sh/?url=https://${
+    deployments[0].url
+  },https://${deployments[1].url}`;
+  return htm`
+    <Box
+      width="300px"
+      height="300px"
+      border="1px solid rgb(234,234,234)"
+      borderRadius="5px"
+      padding="9px"
+      marginRight="20px"
+      display="flex"
+      flexDirection="column"
+    >
+      Screenshot Diff
+      <Link href=${diffUrl} target="_blank">
+        <Box
+          display="inline-block"
+          width="100%"
+          textOverflow="ellipsis"
+          overflow="hidden"
+          whiteSpace="nowrap"
+        >
+          ${diffUrl}
+        </Box>
+      </Link>
+      <Box
+        flexGrow="1"
+        flexShrink="1"
+        width="280px"
+        height="100%"
+        overflow="hidden"
+      >
+        <Link
+          href=${diffUrl}
+          target="_blank"
+        >
+          <Img
+            width="280"
+            height="auto"
+            src=${diffUrl}
+          />
+        </Link>
+      </Box>
+    </Box>
+  `;
+};
 
-  const { deployments } = await zeitClient.fetchAndThrow(apiUrl, {
+module.exports = withUiHook(async ({ payload, zeitClient }) => {
+  const projects = await zeitClient.fetchAndThrow("/v1/projects/list", {
     method: "GET"
   });
+
+  const projectsDeployments = await Promise.all(
+    projects.map(project =>
+      zeitClient.fetchAndThrow(
+        `/v4/now/deployments?projectId=${project.id}&limit=2`,
+        {
+          method: "GET"
+        }
+      )
+    )
+  );
+
+  const projectId = false;
+
   return htm`
 		<Page>
 			<H1>Latest deployments on this ${projectId ? "project" : "account"}</H1>
-			<UL>
-        ${deployments.map(
-          d => htm`
-          <LI>
-            <H2>${d.name}</H2>
-            <Link href=${`https://${d.url}`} target="_blank">
-              <Box display="inline-block">
-                <P>https://${d.url}</P>
-              </Box>
-            </Link>
+      ${projectsDeployments.map(({ deployments }, projectIndex) => {
+        return htm`
+          <Box
+            margin="20px 0"
+            padding="20px"
+            border="1px solid rgb(234,234,234)"
+            borderRadius="5px"
+            background="#ffffff"
+          >
+            <H2>${projects[projectIndex].name}</H2>
             <Box
-              width="300px"
-              height="300px"
-              border="1px solid #ccc"
-              borderRadius="5px"
-              padding="9px"
-              >
-              <Link href=${`https://puppeteer-screenshot.sthobis.now.sh/${
-                d.url
-              }?fullPage=true`} target="_blank">
+              display="flex"
+            >
+              ${deployments.map(
+                (deployment, deploymentIndex) => htm`
                 <Box
-                  width="280px"
-                  height="280px"
-                  overflow="hidden"
+                  width="300px"
+                  height="300px"
+                  border="1px solid rgb(234,234,234)"
+                  borderRadius="5px"
+                  padding="9px"
+                  marginRight="20px"
+                  display="flex"
+                  flexDirection="column"
                 >
-                  <Img
-                    width="280"
-                    height="auto"
-                    src=${`https://puppeteer-screenshot.sthobis.now.sh/${
-                      d.url
-                    }?fullPage=true`}
-                  />
+                  ${
+                    deploymentIndex === 0
+                      ? "Latest deployment"
+                      : "Previous deployment"
+                  }
+                  <Link href=${`https://${deployment.url}`} target="_blank">
+                    <Box
+                      display="inline-block"
+                      width="100%"
+                      textOverflow="ellipsis"
+                      overflow="hidden"
+                      whiteSpace="nowrap"
+                    >
+                      ${`https://${deployment.url}`}
+                    </Box>
+                  </Link>
+                  <Box
+                    flexGrow="1"
+                    flexShrink="1"
+                    width="280px"
+                    height="100%"
+                    overflow="hidden"
+                  >
+                    <Link
+                      href=${`https://puppeteer-screenshot-sthobis.now.sh/${
+                        deployment.url
+                      }`}
+                      target="_blank"
+                    >
+                      <Img
+                        width="280"
+                        height="auto"
+                        src=${`https://puppeteer-screenshot-sthobis.now.sh/${
+                          deployment.url
+                        }`}
+                      />
+                    </Link>
+                  </Box>
                 </Box>
-              </Link>
+              `
+              )}
+              ${deployments.length === 2 ? compareImages(deployments) : ""}
             </Box>
-          </LI>
-        `
-        )}
-			</UL>
+          </Box>
+        `;
+      })}
 		</Page>
 	`;
 });
